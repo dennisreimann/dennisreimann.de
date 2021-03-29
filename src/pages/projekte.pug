@@ -9,6 +9,25 @@ block main
   section.wrap
     .project
       h3.project__name
+        a(href="https://bitcoinmythology.org/" rel="external noopener") The Square Crypto Book of Bitcoin Mythology
+      p.project__description
+        | Entwicklung der Bitcoin Mythology Website.
+
+      .project__task
+        +icon("project-task", h.t(locals, "Aufgabe", "Task")).project__icon.project__icon--task
+        ul
+          li Frontendentwicklung mit HTML und CSS.
+          li GitHub Actions und Deployment Workflow.
+      p.project__context
+        +icon("project-context", h.t(locals, "Kontext", "Context")).project__icon.project__icon--context
+        = "Auftragsarbeit für "
+        a(href="https://squarecrypto.org/" rel="external noopener") Square Crypto
+      p.project__period
+        +icon("project-period", h.t(locals, "Zeitraum", "Period")).project__icon.project__icon--period
+        | März 2021
+
+    .project
+      h3.project__name
         a(href="https://einundzwanzig.space/" rel="external noopener") Einundzwanzig
       p.project__description
         | Entwicklung der Einundzwanzig Website und des dazugehörigen Onlineshops.
@@ -35,6 +54,7 @@ block main
         +icon("project-task", h.t(locals, "Aufgabe", "Task")).project__icon.project__icon--task
         ul
           li Frontendentwicklung mit HTML, CSS und JavaScript.
+          li GitHub Actions und Deployment Workflow.
           li Eastereggs.
       p.project__context
         +icon("project-context", h.t(locals, "Kontext", "Context")).project__icon.project__icon--context
