@@ -1,0 +1,744 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en" xml:base="https://dennisreimann.de">
+  <id>https://dennisreimann.de/atom.xml</id>
+  <title>Dennis Reimann</title>
+  <subtitle>UI Engineering – crafting user interfaces</subtitle>
+  <updated>2019-02-26T00:00:00.000Z</updated>
+  <link href="https://dennisreimann.de/articles.html"></link>
+  <link rel="self" href="https://dennisreimann.de/atom.xml"></link>
+  <author>
+    <name>Dennis Reimann</name>
+    <email>mail@dennisreimann.de</email>
+  </author>
+  <entry>
+    <id>https://dennisreimann.de/articles/vue-cli-serve-express.html</id>
+    <title>Using Vue-CLI to serve an Express app</title>
+    <link href="https://dennisreimann.de/articles/vue-cli-serve-express.html"/>
+    <updated>2019-02-26T00:00:00.000Z</updated>
+    <content type="html">&lt;p&gt;The Vue-CLI is great, but one thing I struggled with and found no resources on:
+How to serve an Express app alongside the UI without using another process?
+Accomplishing this is actually pretty easy and I hope to provide some guidance with this article.&lt;/p&gt;
+&lt;h2&gt;Starting point&lt;/h2&gt;
+&lt;p&gt;In my case the Express serves the API for the Vue UI.
+This case is also described in the Vue CLI docs:
+Just use the &lt;a href=&quot;https://cli.vuejs.org/config/#devserver-proxy&quot;&gt;&lt;code&gt;devServer.proxy&lt;/code&gt;&lt;/a&gt; config for that and you are done.
+But not so fast …&lt;/p&gt;
+&lt;p&gt;Using the proxy setup you have to start separate servers for the UI and API.
+Depending on your case this might make sense, but for me both are intertwined and having one server makes things way easier:
+&lt;mark&gt;In dev mode we can use the existing Webpack Dev Server, which is based on Express;
+running the E2E tests you will likely need the Express server running as well.&lt;/mark&gt;&lt;/p&gt;
+&lt;p&gt;Here is how to set this up so that running &lt;code&gt;vue-cli-service serve&lt;/code&gt; spins up one Express for the API and UI.&lt;/p&gt;
+&lt;h2&gt;Configuration&lt;/h2&gt;
+&lt;p&gt;Let’s start with the &lt;code&gt;vue.config.js&lt;/code&gt; file, which looks like this:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-js&quot;&gt;&lt;span class=&quot;hljs-keyword&quot;&gt;const&lt;/span&gt; configureAPI = &lt;span class=&quot;hljs-built_in&quot;&gt;require&lt;/span&gt;(&lt;span class=&quot;hljs-string&quot;&gt;&amp;#x27;./src/server/configure&amp;#x27;&lt;/span&gt;)
+
+&lt;span class=&quot;hljs-variable language_&quot;&gt;module&lt;/span&gt;.&lt;span class=&quot;hljs-property&quot;&gt;exports&lt;/span&gt; = {
+  &lt;span class=&quot;hljs-attr&quot;&gt;devServer&lt;/span&gt;: {
+    &lt;span class=&quot;hljs-attr&quot;&gt;before&lt;/span&gt;: configureAPI
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Wow, that is as short as the proxy config, but what does it do?
+It leverages the &lt;a href=&quot;https://webpack.js.org/configuration/dev-server/#devserverbefore&quot;&gt;Webpack Dev Server &lt;code&gt;before&lt;/code&gt; callback&lt;/a&gt;, which does the heavy lifting.&lt;/p&gt;
+&lt;p&gt;I keep my server stuff in &lt;code&gt;src/server&lt;/code&gt;, which contains the following &lt;code&gt;configure.js&lt;/code&gt; that is imported above:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-js&quot;&gt;&lt;span class=&quot;hljs-keyword&quot;&gt;const&lt;/span&gt; bodyParser = &lt;span class=&quot;hljs-built_in&quot;&gt;require&lt;/span&gt;(&lt;span class=&quot;hljs-string&quot;&gt;&amp;#x27;body-parser&amp;#x27;&lt;/span&gt;)
+&lt;span class=&quot;hljs-keyword&quot;&gt;const&lt;/span&gt; api = &lt;span class=&quot;hljs-built_in&quot;&gt;require&lt;/span&gt;(&lt;span class=&quot;hljs-string&quot;&gt;&amp;#x27;./api&amp;#x27;&lt;/span&gt;)
+
+&lt;span class=&quot;hljs-variable language_&quot;&gt;module&lt;/span&gt;.&lt;span class=&quot;hljs-property&quot;&gt;exports&lt;/span&gt; = &lt;span class=&quot;hljs-function&quot;&gt;&lt;span class=&quot;hljs-params&quot;&gt;app&lt;/span&gt; =&amp;gt;&lt;/span&gt; {
+  app.&lt;span class=&quot;hljs-title function_&quot;&gt;use&lt;/span&gt;(bodyParser.&lt;span class=&quot;hljs-title function_&quot;&gt;json&lt;/span&gt;())
+  app.&lt;span class=&quot;hljs-title function_&quot;&gt;use&lt;/span&gt;(&lt;span class=&quot;hljs-string&quot;&gt;&amp;#x27;/api&amp;#x27;&lt;/span&gt;, api)
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The &lt;code&gt;api.js&lt;/code&gt; file contains the &lt;a href=&quot;https://expressjs.com/en/guide/routing.html#express-router&quot;&gt;Express Router&lt;/a&gt; definitions for the API routes, but that is up to you.
+&lt;mark&gt;The important part is that the &lt;code&gt;configure&lt;/code&gt; module exports a function, which adds the API config to the Webpack Dev Server:&lt;/mark&gt;
+The &lt;code&gt;before&lt;/code&gt; callback invokes this function with the Express &lt;code&gt;app&lt;/code&gt; instance as the first argument;
+the second argument is the Webpack Dev Server instance, which we can safely ignore here.&lt;/p&gt;
+&lt;p&gt;That is all you actually need for the development and testing environment, freaking simple!&lt;/p&gt;
+&lt;h3&gt;Optional: Server restart on change&lt;/h3&gt;
+&lt;p&gt;To reload the dev server whenever the Express/API code changes you can use &lt;a href=&quot;https://github.com/remy/nodemon#running-non-node-scripts&quot;&gt;nodemon&lt;/a&gt;.
+The &lt;code&gt;npm start&lt;/code&gt; script looks like this:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-bash&quot;&gt;nodemon --&lt;span class=&quot;hljs-built_in&quot;&gt;exec&lt;/span&gt; &lt;span class=&quot;hljs-string&quot;&gt;&amp;#x27;vue-cli-service serve&amp;#x27;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The accompanying &lt;code&gt;nodemon.json&lt;/code&gt; configures the watch directory:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-json&quot;&gt;&lt;span class=&quot;hljs-punctuation&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;hljs-attr&quot;&gt;&amp;quot;watch&amp;quot;&lt;/span&gt;&lt;span class=&quot;hljs-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hljs-punctuation&quot;&gt;[&lt;/span&gt;
+    &lt;span class=&quot;hljs-string&quot;&gt;&amp;quot;src/server&amp;quot;&lt;/span&gt;
+  &lt;span class=&quot;hljs-punctuation&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;hljs-punctuation&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;In production&lt;/h2&gt;
+&lt;p&gt;For completeness sake, here is also what I am doing in production:
+The &lt;code&gt;src/server&lt;/code&gt; directory contains an &lt;code&gt;index.js&lt;/code&gt; file like the following:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-js&quot;&gt;&lt;span class=&quot;hljs-keyword&quot;&gt;const&lt;/span&gt; { resolve } = &lt;span class=&quot;hljs-built_in&quot;&gt;require&lt;/span&gt;(&lt;span class=&quot;hljs-string&quot;&gt;&amp;#x27;path&amp;#x27;&lt;/span&gt;)
+&lt;span class=&quot;hljs-keyword&quot;&gt;const&lt;/span&gt; history = &lt;span class=&quot;hljs-built_in&quot;&gt;require&lt;/span&gt;(&lt;span class=&quot;hljs-string&quot;&gt;&amp;#x27;connect-history-api-fallback&amp;#x27;&lt;/span&gt;)
+&lt;span class=&quot;hljs-keyword&quot;&gt;const&lt;/span&gt; express = &lt;span class=&quot;hljs-built_in&quot;&gt;require&lt;/span&gt;(&lt;span class=&quot;hljs-string&quot;&gt;&amp;#x27;express&amp;#x27;&lt;/span&gt;)
+&lt;span class=&quot;hljs-keyword&quot;&gt;const&lt;/span&gt; configureAPI = &lt;span class=&quot;hljs-built_in&quot;&gt;require&lt;/span&gt;(&lt;span class=&quot;hljs-string&quot;&gt;&amp;#x27;./configure&amp;#x27;&lt;/span&gt;)
+&lt;span class=&quot;hljs-keyword&quot;&gt;const&lt;/span&gt; app = &lt;span class=&quot;hljs-title function_&quot;&gt;express&lt;/span&gt;()
+
+&lt;span class=&quot;hljs-keyword&quot;&gt;const&lt;/span&gt; { &lt;span class=&quot;hljs-variable constant_&quot;&gt;PORT&lt;/span&gt; = &lt;span class=&quot;hljs-number&quot;&gt;3000&lt;/span&gt; } = process.&lt;span class=&quot;hljs-property&quot;&gt;env&lt;/span&gt;
+
+&lt;span class=&quot;hljs-comment&quot;&gt;// API&lt;/span&gt;
+&lt;span class=&quot;hljs-title function_&quot;&gt;configureAPI&lt;/span&gt;(app)
+
+&lt;span class=&quot;hljs-comment&quot;&gt;// UI&lt;/span&gt;
+&lt;span class=&quot;hljs-keyword&quot;&gt;const&lt;/span&gt; publicPath = &lt;span class=&quot;hljs-title function_&quot;&gt;resolve&lt;/span&gt;(__dirname, &lt;span class=&quot;hljs-string&quot;&gt;&amp;#x27;../../dist&amp;#x27;&lt;/span&gt;)
+&lt;span class=&quot;hljs-keyword&quot;&gt;const&lt;/span&gt; staticConf = { &lt;span class=&quot;hljs-attr&quot;&gt;maxAge&lt;/span&gt;: &lt;span class=&quot;hljs-string&quot;&gt;&amp;#x27;1y&amp;#x27;&lt;/span&gt;, &lt;span class=&quot;hljs-attr&quot;&gt;etag&lt;/span&gt;: &lt;span class=&quot;hljs-literal&quot;&gt;false&lt;/span&gt; }
+
+app.&lt;span class=&quot;hljs-title function_&quot;&gt;use&lt;/span&gt;(express.&lt;span class=&quot;hljs-title function_&quot;&gt;static&lt;/span&gt;(publicPath, staticConf))
+app.&lt;span class=&quot;hljs-title function_&quot;&gt;use&lt;/span&gt;(&lt;span class=&quot;hljs-string&quot;&gt;&amp;#x27;/&amp;#x27;&lt;/span&gt;, &lt;span class=&quot;hljs-title function_&quot;&gt;history&lt;/span&gt;())
+
+&lt;span class=&quot;hljs-comment&quot;&gt;// Go&lt;/span&gt;
+app.&lt;span class=&quot;hljs-title function_&quot;&gt;listen&lt;/span&gt;(&lt;span class=&quot;hljs-variable constant_&quot;&gt;PORT&lt;/span&gt;, &lt;span class=&quot;hljs-function&quot;&gt;() =&amp;gt;&lt;/span&gt; &lt;span class=&quot;hljs-variable language_&quot;&gt;console&lt;/span&gt;.&lt;span class=&quot;hljs-title function_&quot;&gt;log&lt;/span&gt;(&lt;span class=&quot;hljs-string&quot;&gt;`App running on port &lt;span class=&quot;hljs-subst&quot;&gt;${PORT}&lt;/span&gt;!`&lt;/span&gt;))
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;This file contains all the config and logic to bring up the Express server in production;
+it is run using &lt;code&gt;NODE_ENV=production node src/server&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;The shared &lt;code&gt;configureAPI&lt;/code&gt; is passed the &lt;code&gt;app&lt;/code&gt; instance that we create ourselves in this scenario.
+Besides that it also leverages Expess’ static file serving to serve the UI.
+Here we also enable the &lt;a href=&quot;https://router.vuejs.org/guide/essentials/history-mode.html&quot;&gt;Vue Router history push state navigation&lt;/a&gt; as well. You can find more guidance on &lt;a href=&quot;https://cli.vuejs.org/guide/deployment.html&quot;&gt;how to deploy a Vue CLI app&lt;/a&gt; in the official docs.&lt;/p&gt;
+
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/uiengine-2-0.html</id>
+    <title>UIengine 2.0</title>
+    <link href="https://dennisreimann.de/articles/uiengine-2-0.html"/>
+    <updated>2019-01-30T00:00:00.000Z</updated>
+    <summary>This week I shipped the UIengine v2.0 – here’s what changed during the last six months after v1.0.</summary>
+    <content type="html">This week I shipped the UIengine v2.0 – here’s what changed during the last six months after v1.0.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/uiengineering-weekly-2018-31.html</id>
+    <title>#UIengineering Weekly – 31/2018</title>
+    <link href="https://dennisreimann.de/articles/uiengineering-weekly-2018-31.html"/>
+    <updated>2018-08-03T00:00:00.000Z</updated>
+    <content type="html">&lt;p&gt;This is a summary of interesting articles I found and read this week.
+You can follow along during the week on Twitter with the &lt;a href=&quot;https://twitter.com/search?q=%23UIengineering&quot;&gt;#UIengineering&lt;/a&gt; hashtag
+and in the &lt;a href=&quot;https://www.reddit.com/r/UIengineering/&quot;&gt;UIengineering subreddit&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;Create your design system&lt;/h2&gt;
+&lt;p&gt;In this two part series Sebastiano Guerriero and Claudia Romano share their approach for implementing a design system:
+Part 1 is about
+&lt;a href=&quot;https://medium.com/codyhouse/create-your-design-system-part-1-typography-7c630d9092bd&quot;&gt;Typography&lt;/a&gt;
+and part 2 about
+&lt;a href=&quot;https://medium.com/codyhouse/create-your-design-system-part-2-grid-layout-aa961d59b8d6&quot;&gt;Grid &amp;amp; Layout&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;&lt;a href=&quot;https://medium.com/salesforce-ux/evolving-a-design-system-at-scale-88aa2f249525&quot;&gt;Evolving a Design System at Scale&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Liz Khoo describes how the Salesforce UX team uses cross-product themes to update their design system.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Getting this consistency into product is its own journey for each product team. Once the UX team is aligned internally, each product team must address this “trust debt” (aka design debt) and make the necessary changes.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2&gt;&lt;a href=&quot;http://varya.me/design-systems/pattern-journey/&quot;&gt;Pattern Journey&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Varya Stepanova gives us a visual illustration and explanation of what happens to a pattern on its way from identifying to actual implementation.
+This shows how different the path might be depending on the situation.&lt;/p&gt;
+
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/uiengineering-weekly-2018-29.html</id>
+    <title>#UIengineering Weekly – 29/2018</title>
+    <link href="https://dennisreimann.de/articles/uiengineering-weekly-2018-29.html"/>
+    <updated>2018-07-20T00:00:00.000Z</updated>
+    <content type="html">&lt;p&gt;This is a summary of interesting articles I found and read this week.
+You can follow along during the week on Twitter with the &lt;a href=&quot;https://twitter.com/search?q=%23UIengineering&quot;&gt;#UIengineering&lt;/a&gt; hashtag
+and in the &lt;a href=&quot;https://www.reddit.com/r/UIengineering/&quot;&gt;UIengineering subreddit&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;&lt;a href=&quot;https://medium.freecodecamp.org/the-design-tool-dilemma-225541c4ad1d&quot;&gt;The Design Tool Dilemma&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Colm Tuite takes detailed look at two opposing narratives emerging in the design tool space.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;If our design tools are to provide us with the same level of product influence that developers have enjoyed exclusively for decades, they need to move on from the broken workflows of the past and continue to embrace the interactive mediums of the future.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2&gt;&lt;a href=&quot;https://www.smashingmagazine.com/2018/07/reusable-components-custom-elements-shadow-dom-npm/&quot;&gt;The Holy Grail Of Reusable Components&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;On Smashing Magazine Oliver Williams looks at augmenting HTML with components that have built-in functionality and styles.
+He also shwos how to make these custom elements reusable across projects using NPM.&lt;/p&gt;
+&lt;h2&gt;&lt;a href=&quot;https://articles.uie.com/redesign_design_process/&quot;&gt;The Redesign of the Design Process&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Jared M. Spool outlines what a modern design process should look like:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Today, the best designs aren’t coming from a single designer who somehow produces an amazing solution. The best designs are coming from teams that work together as a unit, marching towards a commonly held vision, and always building a new understanding of the problem.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/uiengine-1-0.html</id>
+    <title>UIengine 1.0</title>
+    <link href="https://dennisreimann.de/articles/uiengine-1-0.html"/>
+    <updated>2018-07-16T00:00:00.000Z</updated>
+    <summary>The UIengine is a workbench for UI-driven development: Create living design systems and pattern libraries.</summary>
+    <content type="html">The UIengine is a workbench for UI-driven development: Create living design systems and pattern libraries.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/uiengineering-weekly-2018-28.html</id>
+    <title>#UIengineering Weekly – 28/2018</title>
+    <link href="https://dennisreimann.de/articles/uiengineering-weekly-2018-28.html"/>
+    <updated>2018-07-13T00:00:00.000Z</updated>
+    <content type="html">&lt;p&gt;This is a summary of interesting articles I found and read this week.
+You can follow along during the week on Twitter with the &lt;a href=&quot;https://twitter.com/search?q=%23UIengineering&quot;&gt;#UIengineering&lt;/a&gt; hashtag
+and in the &lt;a href=&quot;https://www.reddit.com/r/UIengineering/&quot;&gt;UIengineering subreddit&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;&lt;a href=&quot;https://www.smashingmagazine.com/2018/07/pattern-library-first-css/&quot;&gt;Pattern Library First: An Approach For Managing CSS&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Rachel Andrew wrote this practical article about building up a pattern library:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;CSS can be hard to manage across a project, especially when you need to include media queries for various breakpoints and fallbacks for older browsers. In this article, we will take a look at using Fractal to manage components which use CSS Grid.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2&gt;&lt;a href=&quot;https://medium.com/@broccolini/design-systems-at-github-c8e5378d2542&quot;&gt;Design Systems at GitHub&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Diana Mounter manages the Design System team at GitHub.
+In this article she shares their story of how they started out, evolved the system and scaled their team.&lt;/p&gt;
+&lt;h2&gt;&lt;a href=&quot;http://jxnblk.com/writing/posts/defining-component-apis-in-react/&quot;&gt;Defining Component APIs in React&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Brent Jackson shares his learnings from building components.
+Even though the examples are made with React, most of them can be applied to other component libraries as well:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The following is a collection of thoughts, opinions, and advice for defining component APIs that are meant to be more flexible, composable, and easier to understand.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2&gt;&lt;a href=&quot;https://adactio.com/journal/14103&quot;&gt;Components and concerns&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Jeremy Keith reflects separation of concerns when building components:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;In the case of pages, asking “what is the core functionality?” will help you come up with a good URL. With components, asking “what is the core functionality?” will help you come up with a good name …&lt;/p&gt;
+&lt;/blockquote&gt;
+
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/uiengineering-weekly-2018-27.html</id>
+    <title>#UIengineering Weekly – 27/2018</title>
+    <link href="https://dennisreimann.de/articles/uiengineering-weekly-2018-27.html"/>
+    <updated>2018-07-06T00:00:00.000Z</updated>
+    <content type="html">&lt;p&gt;This is a summary of interesting articles I found and read this week.
+You can follow along during the week on Twitter with the &lt;a href=&quot;https://twitter.com/search?q=%23UIengineering&quot;&gt;#UIengineering&lt;/a&gt; hashtag
+and in the &lt;a href=&quot;https://www.reddit.com/r/UIengineering/&quot;&gt;UIengineering subreddit&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;&lt;a href=&quot;https://bigmedium.com/ideas/boring-design-systems.html#inventionhappensintheproducts&quot;&gt;The Most Exciting Design Systems Are Boring&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In this high-level post Josh Clark shares his thoughts on why he thinks design patterns should be familiar, even boring.
+He uses his current relaunch project as a practical example for extracting known patterns.&lt;/p&gt;
+&lt;h2&gt;&lt;a href=&quot;https://articles.uie.com/collaborative_shared_understanding/&quot;&gt;Attaining a Collaborative Shared Understanding&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;On the UIE blog Jared M. Spool sums up some points on why it is important for design and development to work closely together:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The result of paired design is a level of communication about the intention that goes beyond what shows up in the prototype.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2&gt;&lt;a href=&quot;https://youtube.com/watch?v=ohw6AgPbJoE&quot;&gt;Sketching in the Browser&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Mark Dalgleish gave this talk at the recent JSHeroes 2018 conference. He explains how the emergence of tools like html-sketchapp allow us to use code as the single source of truth for designs.&lt;/p&gt;
+&lt;h2&gt;&lt;a href=&quot;https://alistapart.com/article/order-out-of-chaos-patterns-of-organization-for-writing-on-the-job&quot;&gt;Order Out of Chaos: Patterns of Organization for Writing on the Job&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Richard Rabil gives in-depth advise for structuring content and writing in general. This article contains useful information for anyone wanting to improve their writing skills, e.g. for documentation.&lt;/p&gt;
+
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/uiengineering-weekly-2018-26.html</id>
+    <title>#UIengineering Weekly – 26/2018</title>
+    <link href="https://dennisreimann.de/articles/uiengineering-weekly-2018-26.html"/>
+    <updated>2018-06-29T00:00:00.000Z</updated>
+    <content type="html">&lt;p&gt;This is a summary of interesting articles I found and read this week.
+You can follow along during the week on Twitter with the &lt;a href=&quot;https://twitter.com/search?q=%23UIengineering&quot;&gt;#UIengineering&lt;/a&gt; hashtag
+and in the &lt;a href=&quot;https://www.reddit.com/r/UIengineering/&quot;&gt;UIengineering subreddit&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;&lt;a href=&quot;https://uxdesign.cc/the-three-lessons-that-changed-how-i-think-about-design-systems-caf1a9f1d856&quot;&gt;The three lessons that changed how I think about design systems&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Jeremy Bloom described his journey working on the “Percolate Next” UI.
+This post contains lots of practical advice from his lesson learned and is an insightful read.&lt;/p&gt;
+&lt;h2&gt;&lt;a href=&quot;https://www.invisionapp.com/blog/getting-executive-ok-design-system/&quot;&gt;Getting executive buy-in for your design system&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;On the Invision blog David Martin addresse good points about the business value of a design system.
+In case you need some arguments to convince your boss or client – here you go!&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;no matter the size of the company, a design system will allow you to iterate faster, will strengthen your brand image, and will allow you to scale in the future.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2&gt;&lt;a href=&quot;https://medium.com/@kylegach/the-themes-are-always-changing-but-the-tokens-stay-the-same-258d57b18f31&quot;&gt;The themes are always changing, but the tokens stay the same&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In this rather technical post Kyle Gach explains how to implement themeable design tokens.
+He uses the Saleforce library Theo to abstract the variables and values for the themes.&lt;/p&gt;
+&lt;h2&gt;&lt;a href=&quot;https://blog.prototypr.io/googles-official-material-design-components-can-be-wrapped-in-react-and-rendered-to-sketch-60ed40ef6020&quot;&gt;Google’s new Material Design components can be wrapped in React and rendered to Sketch&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Aaron Adler shows how to render Material Design components to Sketch.
+He combines create-react-app, Material Design and html-sketchapp to produce a Sketch symbol library from code.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;These tools get us closer to the long-planned designer-developer singularity, in which visual designs are smoothly and precisely assimilated into the codebase.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/uiengineering-weekly-2018-25.html</id>
+    <title>#UIengineering Weekly – 25/2018</title>
+    <link href="https://dennisreimann.de/articles/uiengineering-weekly-2018-25.html"/>
+    <updated>2018-06-22T00:00:00.000Z</updated>
+    <content type="html">&lt;p&gt;This is a summary of interesting articles I found and read this week.
+You can follow along during the week on Twitter with the &lt;a href=&quot;https://twitter.com/search?q=%23UIengineering&quot;&gt;#UIengineering&lt;/a&gt; hashtag
+and in the &lt;a href=&quot;https://www.reddit.com/r/UIengineering/&quot;&gt;UIengineering subreddit&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;&lt;a href=&quot;https://adactio.com/journal/13844&quot;&gt;Design systems&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Jeremy Keith stresses the point that a design system encompassed more than a set of components:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Just because you have a collection of design patterns doesn’t mean you have a design system.
+A system is a framework. It’s a rulebook. It’s what tells you how those patterns work together.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2&gt;&lt;a href=&quot;https://medium.com/credit-karma-design/developing-a-design-environment-30c6276eb89f&quot;&gt;Developing a design environment&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In this article Jules Forrest talks about his learnings from trying to establish an optimal set of processes and tools to design software products.
+It covers a designers view of how the tooling (especially Sketch) can be used and could be improved.&lt;/p&gt;
+&lt;h2&gt;&lt;a href=&quot;https://seesparkbox.com/foundry/when_not_to_use_a_design_system&quot;&gt;When NOT to Use a Design System&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While design systems can be tremendously valuable they’re not a one-size-fits-all solution.
+Bryan Braun lists some cases in which a design system may not be what you really need.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Designers and developers will likely be biased toward building design systems.
+It’s fun, visible greenfield work, which solves pain points for their peers.
+But at the end of the day, somebody has to make sure it makes business sense.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2&gt;&lt;a href=&quot;https://designsystemsrepo.com/&quot;&gt;Design Systems Repo&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;This website is a frequently updated collection of examples, articles, tools and talks about Design Systems.
+It curates a comprehensive list of style guides and pattern libraries, as well as tools and resources.&lt;/p&gt;
+
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/atomic-design-is-messy.html</id>
+    <title>Atomic Design is messy, here's what I prefer</title>
+    <link href="https://dennisreimann.de/articles/atomic-design-is-messy.html"/>
+    <updated>2018-06-18T00:00:00.000Z</updated>
+    <content type="html">&lt;p&gt;Wow, what a clickbaity headline – it makes me apologize to Brad Frost in this very first sentence.
+But now that I got your attention, let me elaborate in modest terms so I can back up this sentiment.&lt;/p&gt;
+&lt;h2&gt;The good parts&lt;/h2&gt;
+&lt;p&gt;I like &lt;a href=&quot;http://atomicdesign.bradfrost.com/table-of-contents/&quot;&gt;Atomic Design&lt;/a&gt; on a conceptual level and I think it works as a methodology to a good extend.
+What I like in particular is how it proposes a mental model that connects to a known concept:
+This alone makes it easy for beginners to understand connections and provides a framework for categorizing things.
+Every non-technical person can get it almost right away and has a way to frame their ideas.&lt;/p&gt;
+&lt;h2&gt;The bad parts&lt;/h2&gt;
+&lt;p&gt;There are two things in particular I see as problematic and coming up when explaining and implementing a design system …&lt;/p&gt;
+&lt;h3&gt;It leads to strict categorization&lt;/h3&gt;
+&lt;p&gt;&lt;mark&gt;Categorizing components as atoms, molecules and organisms works well at first glance, but can become debatable in the details.&lt;/mark&gt;&lt;/p&gt;
+&lt;p&gt;Atoms are defined as „basic building blocks“.
+This maps perfectly fine to single (HTML) elements when thinking in terms of components.
+However, basics such as colors, typography or spacing do not fit well right beside components.
+This might sound nitpicky and esoteric, but in my opinion these design tokens demand for another kind of category.&lt;/p&gt;
+&lt;p&gt;A question which I bet has been asked in every team that applies atomic design: “Is this thing a molecule or an organism?”&lt;br&gt;
+And in fact: What makes something &lt;em&gt;“small”&lt;/em&gt; or &lt;em&gt;“big”&lt;/em&gt;?
+Is it the number of elements or other components it includes?
+The type of subparts it contains?
+The visual space it takes up on the screen?&lt;/p&gt;
+&lt;p&gt;Here we are in the debatable questions on a conceptual level – but these can be sorted out with answers and conventions a team can agree on.
+What I see all the time though is that this does not stop at the conceptual level:
+Teams use these categorizations in the implementation and put the components in actual folders.&lt;/p&gt;
+&lt;p&gt;This is also part of the tooling and Pattern Lab proposes such a structure.
+Personally I do not like this, as it makes it hard to refactor and reshape things.
+Used on an agreed upon conceptual level this might work, but if this is part of your build process you are into trouble sooner than later.&lt;/p&gt;
+&lt;h3&gt;It is a leaky abstraction&lt;/h3&gt;
+&lt;p&gt;&lt;mark&gt;The mental model does not work to full extend and breaks on the template and pages level.&lt;/mark&gt;
+Alright, I accept this is nitpicky, but I think the best metaphors work all the way through.
+With a simpler way to frame this, we would not need the metaphor as a mental model all together.
+I will not hammer on this as other things are more interesting:
+Like the distinction between templates and pages.&lt;/p&gt;
+&lt;p&gt;Technical people might get this: Templates are the abstract form, pages the concrete implementation.
+Non-technical people struggle with this, if it is part of the language and categorization.
+Even I have my problems of fitting templates into the documentation as it is hard to represent them, not just visually.
+Best advice I can give from our experience is to not use this distinction and confuse people.&lt;/p&gt;
+&lt;h2&gt;Are we done ranting?&lt;/h2&gt;
+&lt;p&gt;Seriously, I don‘t want this to offend.
+I wanted to write about some points I see coming up in discussions all the time.
+If you are using Atomic Design and like it I am glad it works for you and please stick to it!&lt;/p&gt;
+&lt;p&gt;The following – hopefully more constructive – part is for those of you who have had similar gripes with it as I did.
+I hope it proposes another angle of looking at it, which I see as a simpler way to frame things.&lt;/p&gt;
+&lt;h2&gt;Foundation, Elements, Modules and the Prototype&lt;/h2&gt;
+&lt;p&gt;Here is the high-level overview of how I like to structure and implement the individual parts:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Foundation&lt;/strong&gt;: This is the basic layer of design tokens such as colors, typography, spacings, iconography and their like.
+Basically the non-component basics I have my trouble with when defined and categorized as atoms.
+Assigning them an explicit category and naming it foundation makes clear that this affects every piece of the system.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Elements&lt;/strong&gt;: The “basic building block” components everyone thinks of when talking about atoms.
+Concretely they map to customized implementations of single HTML elements, like headings and buttons.
+But also these kinds of elements, that do not make any sense in HTML when used standalone, like list items.
+In this case a list would be the most non-dividable form and hence the element.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Modules&lt;/strong&gt;: Everything that can contain other components.
+I am defining components as a collective term for elements or modules – the distinction being whether or not they can contain other parts.
+In atomic design terms this is the group of molecules and organisms, avoiding the strict categorization.
+As you might have guessed, this distinction also does not find its expression in the file system:
+There is no folder hierarchy, just a single flat components directory which contains a single folder for each component.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Prototype&lt;/strong&gt;: In the end product people do not want design tokens, components or templates.
+They want concrete pages which should be assembled of all these parts.
+The prototype is our section in the pattern library/design system documentation where everything comes together.
+Here the templates containing the components are married with the (sample) data to form pages everyone understands.
+The prototype is also the basis for testing and validating ideas and features.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;That’s it!
+Sorry this is not more fancy, but we have found this works for us and the clients and teams we work with.
+It avoids the discussions mentioned above.
+It is simple and hence works without a metaphor.&lt;/p&gt;
+&lt;p&gt;Feel free to ask questions and challenge this approach.
+I am eager to learn how you tackle this, so let me know!&lt;/p&gt;
+
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/uiengineering-weekly-2018-24.html</id>
+    <title>#UIengineering Weekly – 24/2018</title>
+    <link href="https://dennisreimann.de/articles/uiengineering-weekly-2018-24.html"/>
+    <updated>2018-06-15T00:00:00.000Z</updated>
+    <content type="html">&lt;p&gt;This is a summary of interesting articles I found and read this week.
+I share them on Twitter with the &lt;a href=&quot;https://twitter.com/search?q=%23UIengineering&quot;&gt;#UIengineering&lt;/a&gt; hashtag in case you want to follow along during the week.&lt;/p&gt;
+&lt;h2&gt;&lt;a href=&quot;https://theblog.adobe.com/introducing-spectrum-adobe-building-design-system-scale/&quot;&gt;Introducing Spectrum: How Adobe Is Building a Design System at Scale&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The Adobe Spectrum Design Team shares their story of creating a design system for their products.
+This post is an introduction and focuses on the challenges and impact this has at large scale.&lt;/p&gt;
+&lt;h2&gt;&lt;a href=&quot;https://css-tricks.com/your-brain-on-front-end-development/&quot;&gt;Your Brain on Front-End Development &lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Chris Coyer writes about the various concerns we face when creating a user interface.
+He takes apart the design of a complex component and goes into many details of implementing it with CSS.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;When I look at a design […], my front-end brain starts triggering all sorts of things I know will be related to the task.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2&gt;&lt;a href=&quot;http://bradfrost.com/blog/post/creating-themeable-design-systems/&quot;&gt;Creating Themeable Design Systems&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Brad Frost tackles the topic of bringing together different-looking brands and experiences in one design system.
+The article has practical advice and examples and is a good introduction for how to approach themeing in general.&lt;/p&gt;
+&lt;h2&gt;&lt;a href=&quot;https://medium.com/@77896317/the-danger-and-pitfalls-of-uniformity-in-design-systems-68fb31aa28e5&quot;&gt;The danger and pitfalls of Uniformity in Design Systems&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;David Aragonés describes the considerations regarding consistency and flexibility when applying a design system.
+He contrasts the benefits and trade-offs of reuse and finding the right solution for the individual cases:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Although said design systems can provide a solution to difficulties and problems, it’s essential that we analyze in depth the application of the solution to each problem […]&lt;/p&gt;
+&lt;/blockquote&gt;
+
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/delegating-html-links-to-vue-router.html</id>
+    <title>Delegating HTML links to vue-router</title>
+    <link href="https://dennisreimann.de/articles/delegating-html-links-to-vue-router.html"/>
+    <updated>2018-06-11T00:00:00.000Z</updated>
+    <content type="html">&lt;p&gt;When you are dealing with dynamic or user generated content in a Vue.js application, you might want &lt;a href=&quot;https://router.vuejs.org/&quot;&gt;vue-router&lt;/a&gt; to handle internal HTML links.
+Links that are not implemented via &lt;code&gt;&amp;lt;router-link&amp;gt;&lt;/code&gt; will trigger a full page reload. So we need a way to hijack clicks on &lt;code&gt;&amp;lt;a href&amp;gt;&lt;/code&gt; and delegate them to vue-router in case they reference an internal resource.
+There are two ways to intercept the clicks, depending on your use case and needs.&lt;/p&gt;
+&lt;h2&gt;Application-wide handling&lt;/h2&gt;
+&lt;p&gt;In case you have dynamic links all over your application you can intercept them globally.
+To do this, bind the event listener to the window in your top-most/main app components &lt;code&gt;mounted&lt;/code&gt; lifecycle hook:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-javascript&quot;&gt;mounted () {
+  &lt;span class=&quot;hljs-variable language_&quot;&gt;window&lt;/span&gt;.&lt;span class=&quot;hljs-title function_&quot;&gt;addEventListener&lt;/span&gt;(&lt;span class=&quot;hljs-string&quot;&gt;&amp;#x27;click&amp;#x27;&lt;/span&gt;, &lt;span class=&quot;hljs-function&quot;&gt;&lt;span class=&quot;hljs-params&quot;&gt;event&lt;/span&gt; =&amp;gt;&lt;/span&gt; {
+    &lt;span class=&quot;hljs-comment&quot;&gt;// ensure we use the link, in case the click has been received by a subelement&lt;/span&gt;
+    &lt;span class=&quot;hljs-keyword&quot;&gt;let&lt;/span&gt; { target } = event
+    &lt;span class=&quot;hljs-keyword&quot;&gt;while&lt;/span&gt; (target &amp;amp;&amp;amp; target.&lt;span class=&quot;hljs-property&quot;&gt;tagName&lt;/span&gt; !== &lt;span class=&quot;hljs-string&quot;&gt;&amp;#x27;A&amp;#x27;&lt;/span&gt;) target = target.&lt;span class=&quot;hljs-property&quot;&gt;parentNode&lt;/span&gt;
+    &lt;span class=&quot;hljs-comment&quot;&gt;// handle only links that do not reference external resources&lt;/span&gt;
+    &lt;span class=&quot;hljs-keyword&quot;&gt;if&lt;/span&gt; (target &amp;amp;&amp;amp; target.&lt;span class=&quot;hljs-title function_&quot;&gt;matches&lt;/span&gt;(&lt;span class=&quot;hljs-string&quot;&gt;&amp;quot;a:not([href*=&amp;#x27;://&amp;#x27;])&amp;quot;&lt;/span&gt;) &amp;amp;&amp;amp; target.&lt;span class=&quot;hljs-property&quot;&gt;href&lt;/span&gt;) {
+      &lt;span class=&quot;hljs-comment&quot;&gt;// some sanity checks taken from vue-router:&lt;/span&gt;
+      &lt;span class=&quot;hljs-comment&quot;&gt;// https://github.com/vuejs/vue-router/blob/dev/src/components/link.js#L106&lt;/span&gt;
+      &lt;span class=&quot;hljs-keyword&quot;&gt;const&lt;/span&gt; { altKey, ctrlKey, metaKey, shiftKey, button, defaultPrevented } = event
+      &lt;span class=&quot;hljs-comment&quot;&gt;// don&amp;#x27;t handle with control keys&lt;/span&gt;
+      &lt;span class=&quot;hljs-keyword&quot;&gt;if&lt;/span&gt; (metaKey || altKey || ctrlKey || shiftKey) &lt;span class=&quot;hljs-keyword&quot;&gt;return&lt;/span&gt;
+      &lt;span class=&quot;hljs-comment&quot;&gt;// don&amp;#x27;t handle when preventDefault called&lt;/span&gt;
+      &lt;span class=&quot;hljs-keyword&quot;&gt;if&lt;/span&gt; (defaultPrevented) &lt;span class=&quot;hljs-keyword&quot;&gt;return&lt;/span&gt;
+      &lt;span class=&quot;hljs-comment&quot;&gt;// don&amp;#x27;t handle right clicks&lt;/span&gt;
+      &lt;span class=&quot;hljs-keyword&quot;&gt;if&lt;/span&gt; (button !== &lt;span class=&quot;hljs-literal&quot;&gt;undefined&lt;/span&gt; &amp;amp;&amp;amp; button !== &lt;span class=&quot;hljs-number&quot;&gt;0&lt;/span&gt;) &lt;span class=&quot;hljs-keyword&quot;&gt;return&lt;/span&gt;
+      &lt;span class=&quot;hljs-comment&quot;&gt;// don&amp;#x27;t handle if `target=&amp;quot;_blank&amp;quot;`&lt;/span&gt;
+      &lt;span class=&quot;hljs-keyword&quot;&gt;if&lt;/span&gt; (target &amp;amp;&amp;amp; target.&lt;span class=&quot;hljs-property&quot;&gt;getAttribute&lt;/span&gt;) {
+        &lt;span class=&quot;hljs-keyword&quot;&gt;const&lt;/span&gt; linkTarget = target.&lt;span class=&quot;hljs-title function_&quot;&gt;getAttribute&lt;/span&gt;(&lt;span class=&quot;hljs-string&quot;&gt;&amp;#x27;target&amp;#x27;&lt;/span&gt;)
+        &lt;span class=&quot;hljs-keyword&quot;&gt;if&lt;/span&gt; (&lt;span class=&quot;hljs-regexp&quot;&gt;/\b_blank\b/i&lt;/span&gt;.&lt;span class=&quot;hljs-title function_&quot;&gt;test&lt;/span&gt;(linkTarget)) &lt;span class=&quot;hljs-keyword&quot;&gt;return&lt;/span&gt;
+      }
+      &lt;span class=&quot;hljs-comment&quot;&gt;// don&amp;#x27;t handle same page links/anchors&lt;/span&gt;
+      &lt;span class=&quot;hljs-keyword&quot;&gt;const&lt;/span&gt; url = &lt;span class=&quot;hljs-keyword&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;hljs-title function_&quot;&gt;URL&lt;/span&gt;(target.&lt;span class=&quot;hljs-property&quot;&gt;href&lt;/span&gt;)
+      &lt;span class=&quot;hljs-keyword&quot;&gt;const&lt;/span&gt; to = url.&lt;span class=&quot;hljs-property&quot;&gt;pathname&lt;/span&gt;
+      &lt;span class=&quot;hljs-keyword&quot;&gt;if&lt;/span&gt; (&lt;span class=&quot;hljs-variable language_&quot;&gt;window&lt;/span&gt;.&lt;span class=&quot;hljs-property&quot;&gt;location&lt;/span&gt;.&lt;span class=&quot;hljs-property&quot;&gt;pathname&lt;/span&gt; !== to &amp;amp;&amp;amp; event.&lt;span class=&quot;hljs-property&quot;&gt;preventDefault&lt;/span&gt;) {
+        event.&lt;span class=&quot;hljs-title function_&quot;&gt;preventDefault&lt;/span&gt;()
+        &lt;span class=&quot;hljs-variable language_&quot;&gt;this&lt;/span&gt;.&lt;span class=&quot;hljs-property&quot;&gt;$router&lt;/span&gt;.&lt;span class=&quot;hljs-title function_&quot;&gt;push&lt;/span&gt;(to)
+      }
+    }
+  })
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;Encapsulation in a component&lt;/h2&gt;
+&lt;p&gt;If there are only certain places where this kind of link handling must occur, you should encapsulate the event handling in a component.
+The advantage of this is, that it will be more performant and there is no need to interfere with the rest of the apps links.&lt;/p&gt;
+&lt;p&gt;The components template might look like this:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-html&quot;&gt;&lt;span class=&quot;hljs-tag&quot;&gt;&amp;lt;&lt;span class=&quot;hljs-name&quot;&gt;div&lt;/span&gt;
+  &lt;span class=&quot;hljs-attr&quot;&gt;class&lt;/span&gt;=&lt;span class=&quot;hljs-string&quot;&gt;&amp;quot;dynamic-content&amp;quot;&lt;/span&gt;
+  @&lt;span class=&quot;hljs-attr&quot;&gt;click&lt;/span&gt;=&lt;span class=&quot;hljs-string&quot;&gt;&amp;quot;handleClicks&amp;quot;&lt;/span&gt;
+  &lt;span class=&quot;hljs-attr&quot;&gt;v-html&lt;/span&gt;=&lt;span class=&quot;hljs-string&quot;&gt;&amp;quot;dynamicContent&amp;quot;&lt;/span&gt;
+/&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Here &lt;code&gt;dynamicContent&lt;/code&gt; is a html string containing the &lt;code&gt;&amp;lt;a href&amp;gt;&lt;/code&gt; links, which the &lt;code&gt;handleClicks&lt;/code&gt; method takes care of:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-javascript&quot;&gt;&lt;span class=&quot;hljs-attr&quot;&gt;methods&lt;/span&gt;: {
+  handleClicks (event) {
+    &lt;span class=&quot;hljs-comment&quot;&gt;// ensure we use the link, in case the click has been received by a subelement&lt;/span&gt;
+    &lt;span class=&quot;hljs-keyword&quot;&gt;let&lt;/span&gt; { target } = event
+    &lt;span class=&quot;hljs-keyword&quot;&gt;while&lt;/span&gt; (target &amp;amp;&amp;amp; target.&lt;span class=&quot;hljs-property&quot;&gt;tagName&lt;/span&gt; !== &lt;span class=&quot;hljs-string&quot;&gt;&amp;#x27;A&amp;#x27;&lt;/span&gt;) target = target.&lt;span class=&quot;hljs-property&quot;&gt;parentNode&lt;/span&gt;
+    &lt;span class=&quot;hljs-comment&quot;&gt;// handle only links that occur inside the component and do not reference external resources&lt;/span&gt;
+    &lt;span class=&quot;hljs-keyword&quot;&gt;if&lt;/span&gt; (target &amp;amp;&amp;amp; target.&lt;span class=&quot;hljs-title function_&quot;&gt;matches&lt;/span&gt;(&lt;span class=&quot;hljs-string&quot;&gt;&amp;quot;.dynamic-content a:not([href*=&amp;#x27;://&amp;#x27;])&amp;quot;&lt;/span&gt;) &amp;amp;&amp;amp; target.&lt;span class=&quot;hljs-property&quot;&gt;href&lt;/span&gt;) {
+      &lt;span class=&quot;hljs-comment&quot;&gt;// some sanity checks taken from vue-router:&lt;/span&gt;
+      &lt;span class=&quot;hljs-comment&quot;&gt;// https://github.com/vuejs/vue-router/blob/dev/src/components/link.js#L106&lt;/span&gt;
+      &lt;span class=&quot;hljs-keyword&quot;&gt;const&lt;/span&gt; { altKey, ctrlKey, metaKey, shiftKey, button, defaultPrevented } = event
+      &lt;span class=&quot;hljs-comment&quot;&gt;// don&amp;#x27;t handle with control keys&lt;/span&gt;
+      &lt;span class=&quot;hljs-keyword&quot;&gt;if&lt;/span&gt; (metaKey || altKey || ctrlKey || shiftKey) &lt;span class=&quot;hljs-keyword&quot;&gt;return&lt;/span&gt;
+      &lt;span class=&quot;hljs-comment&quot;&gt;// don&amp;#x27;t handle when preventDefault called&lt;/span&gt;
+      &lt;span class=&quot;hljs-keyword&quot;&gt;if&lt;/span&gt; (defaultPrevented) &lt;span class=&quot;hljs-keyword&quot;&gt;return&lt;/span&gt;
+      &lt;span class=&quot;hljs-comment&quot;&gt;// don&amp;#x27;t handle right clicks&lt;/span&gt;
+      &lt;span class=&quot;hljs-keyword&quot;&gt;if&lt;/span&gt; (button !== &lt;span class=&quot;hljs-literal&quot;&gt;undefined&lt;/span&gt; &amp;amp;&amp;amp; button !== &lt;span class=&quot;hljs-number&quot;&gt;0&lt;/span&gt;) &lt;span class=&quot;hljs-keyword&quot;&gt;return&lt;/span&gt;
+      &lt;span class=&quot;hljs-comment&quot;&gt;// don&amp;#x27;t handle if `target=&amp;quot;_blank&amp;quot;`&lt;/span&gt;
+      &lt;span class=&quot;hljs-keyword&quot;&gt;if&lt;/span&gt; (target &amp;amp;&amp;amp; target.&lt;span class=&quot;hljs-property&quot;&gt;getAttribute&lt;/span&gt;) {
+        &lt;span class=&quot;hljs-keyword&quot;&gt;const&lt;/span&gt; linkTarget = target.&lt;span class=&quot;hljs-title function_&quot;&gt;getAttribute&lt;/span&gt;(&lt;span class=&quot;hljs-string&quot;&gt;&amp;#x27;target&amp;#x27;&lt;/span&gt;)
+        &lt;span class=&quot;hljs-keyword&quot;&gt;if&lt;/span&gt; (&lt;span class=&quot;hljs-regexp&quot;&gt;/\b_blank\b/i&lt;/span&gt;.&lt;span class=&quot;hljs-title function_&quot;&gt;test&lt;/span&gt;(linkTarget)) &lt;span class=&quot;hljs-keyword&quot;&gt;return&lt;/span&gt;
+      }
+      &lt;span class=&quot;hljs-comment&quot;&gt;// don&amp;#x27;t handle same page links/anchors&lt;/span&gt;
+      &lt;span class=&quot;hljs-keyword&quot;&gt;const&lt;/span&gt; url = &lt;span class=&quot;hljs-keyword&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;hljs-title function_&quot;&gt;URL&lt;/span&gt;(target.&lt;span class=&quot;hljs-property&quot;&gt;href&lt;/span&gt;)
+      &lt;span class=&quot;hljs-keyword&quot;&gt;const&lt;/span&gt; to = url.&lt;span class=&quot;hljs-property&quot;&gt;pathname&lt;/span&gt;
+      &lt;span class=&quot;hljs-keyword&quot;&gt;if&lt;/span&gt; (&lt;span class=&quot;hljs-variable language_&quot;&gt;window&lt;/span&gt;.&lt;span class=&quot;hljs-property&quot;&gt;location&lt;/span&gt;.&lt;span class=&quot;hljs-property&quot;&gt;pathname&lt;/span&gt; !== to &amp;amp;&amp;amp; event.&lt;span class=&quot;hljs-property&quot;&gt;preventDefault&lt;/span&gt;) {
+        event.&lt;span class=&quot;hljs-title function_&quot;&gt;preventDefault&lt;/span&gt;()
+        &lt;span class=&quot;hljs-variable language_&quot;&gt;this&lt;/span&gt;.&lt;span class=&quot;hljs-property&quot;&gt;$router&lt;/span&gt;.&lt;span class=&quot;hljs-title function_&quot;&gt;push&lt;/span&gt;(to)
+      }
+    }
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;As you can see, this hijacks only a subset of the link clicks – those that occur inside of this component.&lt;/p&gt;
+
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/phoenix-nginx-config.html</id>
+    <title>Configuring NGINX for Phoenix applications</title>
+    <link href="https://dennisreimann.de/articles/phoenix-nginx-config.html"/>
+    <updated>2017-01-30T00:00:00.000Z</updated>
+    <summary>The previous article about deploying Phoenix with Gatling did not go into details for a proper NGINX configuration.
+Using NGINX as a front-end proxy for web applications is a pretty standard setup.
+There are some things to keep in mind concerning Phoenix, SSL and asset delivery and this article sums up the details.</summary>
+    <content type="html">The previous article about deploying Phoenix with Gatling did not go into details for a proper NGINX configuration.
+Using NGINX as a front-end proxy for web applications is a pretty standard setup.
+There are some things to keep in mind concerning Phoenix, SSL and asset delivery and this article sums up the details.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/phoenix-passwordless-authentication-magic-link.html</id>
+    <title>Passwordless Authentication in Phoenix</title>
+    <link href="https://dennisreimann.de/articles/phoenix-passwordless-authentication-magic-link.html"/>
+    <updated>2017-01-11T00:00:00.000Z</updated>
+    <summary>There are tons of different approaches to user authentication.
+Passwordless or “magic link” authentication is very user friendly,
+relatively easy to implement and sufficiently secure for most apps.
+This article is a step by step guide for implementing passwordless authentication in Phoenix.</summary>
+    <content type="html">There are tons of different approaches to user authentication.
+Passwordless or “magic link” authentication is very user friendly,
+relatively easy to implement and sufficiently secure for most apps.
+This article is a step by step guide for implementing passwordless authentication in Phoenix.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/improve-learning.html</id>
+    <title>Improving my learning approach</title>
+    <link href="https://dennisreimann.de/articles/improve-learning.html"/>
+    <updated>2017-01-03T00:00:00.000Z</updated>
+    <summary>During the last months I reflected a lot about how I am trying to learn new things, the tech stuff in particular.
+This article explains how I started replacing my former naive and tiring way of learning with a more practical and paced approach.</summary>
+    <content type="html">During the last months I reflected a lot about how I am trying to learn new things, the tech stuff in particular.
+This article explains how I started replacing my former naive and tiring way of learning with a more practical and paced approach.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/phoenix-deployment-gatling-ubuntu-digital-ocean.html</id>
+    <title>Deploying Phoenix on Ubuntu with Gatling</title>
+    <link href="https://dennisreimann.de/articles/phoenix-deployment-gatling-ubuntu-digital-ocean.html"/>
+    <updated>2016-12-30T00:00:00.000Z</updated>
+    <summary>There aren’t many detailed posts on how to deploy Phoenix apps to production, yet.
+This article is a step by step description of what I did to ship my first Phoenix app.
+I hope it will be a handy resource if you are searching for an easy way to achieve an automated deployment to a single server and leverage hot upgrades.</summary>
+    <content type="html">There aren’t many detailed posts on how to deploy Phoenix apps to production, yet.
+This article is a step by step description of what I did to ship my first Phoenix app.
+I hope it will be a handy resource if you are searching for an easy way to achieve an automated deployment to a single server and leverage hot upgrades.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-architecture-overview.html</id>
+    <title>The Elm Architecture</title>
+    <link href="https://dennisreimann.de/articles/elm-architecture-overview.html"/>
+    <updated>2016-12-20T00:00:00.000Z</updated>
+    <summary>The beauty of The Elm Architecture lies in its simplicity:
+It structures applications into four parts and it defines how these interact with each other.
+In Elm there is only this one determined way to handle interactions and manage state – 
+and it provides a good foundation for modularity, code reuse and testing by default.</summary>
+    <content type="html">The beauty of The Elm Architecture lies in its simplicity:
+It structures applications into four parts and it defines how these interact with each other.
+In Elm there is only this one determined way to handle interactions and manage state – 
+and it provides a good foundation for modularity, code reuse and testing by default.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-atom-editor.html</id>
+    <title>Elm Atom Plugins</title>
+    <link href="https://dennisreimann.de/articles/elm-atom-editor.html"/>
+    <updated>2016-11-17T00:00:00.000Z</updated>
+    <summary>Some very good and useful plugins that will enhance your Elm editing in Atom.</summary>
+    <content type="html">Some very good and useful plugins that will enhance your Elm editing in Atom.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-tools-resources.html</id>
+    <title>Elm Tools and Resources</title>
+    <link href="https://dennisreimann.de/articles/elm-tools-resources.html"/>
+    <updated>2016-11-14T00:00:00.000Z</updated>
+    <summary>A list of tools and resources I found valuable when working with Elm. It contains useful tools that will help in your day to day work and links to learn Elm as well as to deepen your knowledge.</summary>
+    <content type="html">A list of tools and resources I found valuable when working with Elm. It contains useful tools that will help in your day to day work and links to learn Elm as well as to deepen your knowledge.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-type-annotations.html</id>
+    <title>Elm Type Annotations</title>
+    <link href="https://dennisreimann.de/articles/elm-type-annotations.html"/>
+    <updated>2016-11-07T00:00:00.000Z</updated>
+    <summary>As Elm is a statically typed language, everything has a type. Type annotations are an optional feature and the compiler can infer the types of your functions and value. Even though you do not have to write the type annotations yourself you probably should: They document your code and make it more explicit.</summary>
+    <content type="html">As Elm is a statically typed language, everything has a type. Type annotations are an optional feature and the compiler can infer the types of your functions and value. Even though you do not have to write the type annotations yourself you probably should: They document your code and make it more explicit.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-maybe.html</id>
+    <title>Elm Maybe</title>
+    <link href="https://dennisreimann.de/articles/elm-maybe.html"/>
+    <updated>2016-12-06T00:00:00.000Z</updated>
+    <summary>Opposed to JavaScript and many other programming languages, Elm does not have the concept of undefined or null values. Of course there are cases in which variables contain nothing or functions cannot return a proper value – but instead of leaving it up to you whether or not to handle these cases, Elm makes them explicit with a type called Maybe and enforces the handling thereof.</summary>
+    <content type="html">Opposed to JavaScript and many other programming languages, Elm does not have the concept of undefined or null values. Of course there are cases in which variables contain nothing or functions cannot return a proper value – but instead of leaving it up to you whether or not to handle these cases, Elm makes them explicit with a type called Maybe and enforces the handling thereof.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/living-pattern-library.html</id>
+    <title>Living Pattern Libraries</title>
+    <link href="https://dennisreimann.de/articles/living-pattern-library.html"/>
+    <updated>2016-09-26T00:00:00.000Z</updated>
+    <summary>Styleguides und Pattern Libraries sind in der UI-Entwicklung schon seit längerem ein großes Thema. Sie bieten Designern und Entwicklern einen Baukasten von Komponenten, aus denen die Interfaces zusammengesetzt werden und sorgen für ein konsistentes Gesamtbild der Website oder Anwendung.</summary>
+    <content type="html">Styleguides und Pattern Libraries sind in der UI-Entwicklung schon seit längerem ein großes Thema. Sie bieten Designern und Entwicklern einen Baukasten von Komponenten, aus denen die Interfaces zusammengesetzt werden und sorgen für ein konsistentes Gesamtbild der Website oder Anwendung.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-datenstrukturen-union-type.html</id>
+    <title>Elm Datenstrukturen (3)</title>
+    <link href="https://dennisreimann.de/articles/elm-datenstrukturen-union-type.html"/>
+    <link rel="alternate" type="text/html" href="https://dennisreimann.de/articles/elm-data-structures-union-type.html" title="en"/>
+    <updated>2016-12-06T00:00:00.000Z</updated>
+    <summary>Durch die Definition eines Union Type erstellt man immer einen neuen Typ. Ein Union Type kann eine Vereinigung verschiedener Typen sein – jedoch muss er dies nicht.</summary>
+    <content type="html">Durch die Definition eines Union Type erstellt man immer einen neuen Typ. Ein Union Type kann eine Vereinigung verschiedener Typen sein – jedoch muss er dies nicht.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-data-structures-union-type.html</id>
+    <title>Elm Data Structures (3)</title>
+    <link href="https://dennisreimann.de/articles/elm-data-structures-union-type.html"/>
+    <link rel="alternate" type="text/html" href="https://dennisreimann.de/articles/elm-datenstrukturen-union-type.html" title="de"/>
+    <updated>2016-12-06T00:00:00.000Z</updated>
+    <summary>By defining a union type one always creates a new type that did not exist before. A union type can be an amalgamation of different types – but it does not have to be.</summary>
+    <content type="html">By defining a union type one always creates a new type that did not exist before. A union type can be an amalgamation of different types – but it does not have to be.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-datenstrukturen-record-tuple.html</id>
+    <title>Elm Datenstrukturen (2)</title>
+    <link href="https://dennisreimann.de/articles/elm-datenstrukturen-record-tuple.html"/>
+    <link rel="alternate" type="text/html" href="https://dennisreimann.de/articles/elm-data-structures-record-tuple.html" title="en"/>
+    <updated>2016-12-06T00:00:00.000Z</updated>
+    <summary>Records und Tupel können beliebig viele Elemente enthalten – im Gegensatz zu Listen, Arrays, Sets und Dictionaries müssen die enthaltenen Elemente jedoch nicht vom gleichen Datentyp sein.</summary>
+    <content type="html">Records und Tupel können beliebig viele Elemente enthalten – im Gegensatz zu Listen, Arrays, Sets und Dictionaries müssen die enthaltenen Elemente jedoch nicht vom gleichen Datentyp sein.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-data-structures-record-tuple.html</id>
+    <title>Elm Data Structures (2)</title>
+    <link href="https://dennisreimann.de/articles/elm-data-structures-record-tuple.html"/>
+    <link rel="alternate" type="text/html" href="https://dennisreimann.de/articles/elm-datenstrukturen-record-tuple.html" title="de"/>
+    <updated>2016-12-06T00:00:00.000Z</updated>
+    <summary>Records and tuples can contain an arbitrary amount of elements – as opposed to lists, arrays, sets and dictionaries these elements do not have to be of the same data type.</summary>
+    <content type="html">Records and tuples can contain an arbitrary amount of elements – as opposed to lists, arrays, sets and dictionaries these elements do not have to be of the same data type.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-datenstrukturen-list-array-set-dict.html</id>
+    <title>Elm Datenstrukturen (1)</title>
+    <link href="https://dennisreimann.de/articles/elm-datenstrukturen-list-array-set-dict.html"/>
+    <link rel="alternate" type="text/html" href="https://dennisreimann.de/articles/elm-data-structures-list-array-set-dict.html" title="en"/>
+    <updated>2016-01-26T00:00:00.000Z</updated>
+    <summary>In Elm gibt es verschiedene Datenstrukturen, die Elemente enthalten können. Dieser Artikel widmet sich den iterierbaren Strukturen Listen, Arrays, Sets und Dictionaries.</summary>
+    <content type="html">In Elm gibt es verschiedene Datenstrukturen, die Elemente enthalten können. Dieser Artikel widmet sich den iterierbaren Strukturen Listen, Arrays, Sets und Dictionaries.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-data-structures-list-array-set-dict.html</id>
+    <title>Elm Data Structures (1)</title>
+    <link href="https://dennisreimann.de/articles/elm-data-structures-list-array-set-dict.html"/>
+    <link rel="alternate" type="text/html" href="https://dennisreimann.de/articles/elm-datenstrukturen-list-array-set-dict.html" title="de"/>
+    <updated>2016-01-26T00:00:00.000Z</updated>
+    <summary>In Elm there are different kinds of data structures that can contain elements. This article spotlights the iterable structures lists, arrays, sets and dictionaries.</summary>
+    <content type="html">In Elm there are different kinds of data structures that can contain elements. This article spotlights the iterable structures lists, arrays, sets and dictionaries.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-funktionen.html</id>
+    <title>Elm Funktionen</title>
+    <link href="https://dennisreimann.de/articles/elm-funktionen.html"/>
+    <link rel="alternate" type="text/html" href="https://dennisreimann.de/articles/elm-functions.html" title="en"/>
+    <updated>2016-01-21T00:00:00.000Z</updated>
+    <summary>Dieser Artikel widmet sich dem zentralen Sprachkonstrukt in Elm: Den Funktionen. Wie sieht die Definition und der Aufruf von Funktionen aus, wie kann man Funktionen über Piping verbinden und was ist überhaupt Currying?</summary>
+    <content type="html">Dieser Artikel widmet sich dem zentralen Sprachkonstrukt in Elm: Den Funktionen. Wie sieht die Definition und der Aufruf von Funktionen aus, wie kann man Funktionen über Piping verbinden und was ist überhaupt Currying?
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-functions.html</id>
+    <title>Elm Functions</title>
+    <link href="https://dennisreimann.de/articles/elm-functions.html"/>
+    <link rel="alternate" type="text/html" href="https://dennisreimann.de/articles/elm-funktionen.html" title="de"/>
+    <updated>2016-01-21T00:00:00.000Z</updated>
+    <summary>This article spotlights the central construct of the Elm programming language: Functions. What does the definition of a function look like, how can functions be chained via piping and what the heck is currying?</summary>
+    <content type="html">This article spotlights the central construct of the Elm programming language: Functions. What does the definition of a function look like, how can functions be chained via piping and what the heck is currying?
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-modules-import.html</id>
+    <title>Elm Modules and Imports</title>
+    <link href="https://dennisreimann.de/articles/elm-modules-import.html"/>
+    <link rel="alternate" type="text/html" href="https://dennisreimann.de/articles/elm-module-imports.html" title="de"/>
+    <updated>2016-01-19T00:00:00.000Z</updated>
+    <summary>Importing a module exposes its functionality in the context of the program that is loading the module. In Elm there are different ways to import modules and we will have a look at these in this article.</summary>
+    <content type="html">Importing a module exposes its functionality in the context of the program that is loading the module. In Elm there are different ways to import modules and we will have a look at these in this article.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-module-imports.html</id>
+    <title>Elm Module und Imports</title>
+    <link href="https://dennisreimann.de/articles/elm-module-imports.html"/>
+    <link rel="alternate" type="text/html" href="https://dennisreimann.de/articles/elm-modules-import.html" title="en"/>
+    <updated>2016-01-19T00:00:00.000Z</updated>
+    <summary>Durch das Importieren/Laden eines Moduls werden dessen Funktionalitäten im Kontext der importierenden Datei bereitgestellt. In Elm gibt es verschiedene Formen des Modulimports, die wir uns in diesem Artikel näher ansehen werden.</summary>
+    <content type="html">Durch das Importieren/Laden eines Moduls werden dessen Funktionalitäten im Kontext der importierenden Datei bereitgestellt. In Elm gibt es verschiedene Formen des Modulimports, die wir uns in diesem Artikel näher ansehen werden.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-setup.html</id>
+    <title>Elm Setup</title>
+    <link href="https://dennisreimann.de/articles/elm-setup.html"/>
+    <link rel="alternate" type="text/html" href="https://dennisreimann.de/articles/elm-setup-first-project.html" title="en"/>
+    <updated>2016-01-17T00:00:00.000Z</updated>
+    <summary>Wie installiert man Elm und was für Tools benötigt man, um ein erstes Projekt zu bauen? Anschließend sehen wir uns an, wie die Toolchain für ein Projekt aussehen kann, wenn es über das einfache Hello World hinausgeht.</summary>
+    <content type="html">Wie installiert man Elm und was für Tools benötigt man, um ein erstes Projekt zu bauen? Anschließend sehen wir uns an, wie die Toolchain für ein Projekt aussehen kann, wenn es über das einfache Hello World hinausgeht.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-setup-first-project.html</id>
+    <title>Elm Setup</title>
+    <link href="https://dennisreimann.de/articles/elm-setup-first-project.html"/>
+    <link rel="alternate" type="text/html" href="https://dennisreimann.de/articles/elm-setup.html" title="de"/>
+    <updated>2016-01-17T00:00:00.000Z</updated>
+    <summary>How to install Elm and which tools do you need to build your first project? Besides clarifying these questions we will also look at a toolchain that goes beyond the simple Hello World.</summary>
+    <content type="html">How to install Elm and which tools do you need to build your first project? Besides clarifying these questions we will also look at a toolchain that goes beyond the simple Hello World.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-getting-started.html</id>
+    <title>Elm lernen</title>
+    <link href="https://dennisreimann.de/articles/elm-getting-started.html"/>
+    <link rel="alternate" type="text/html" href="https://dennisreimann.de/https://changelog.com/posts/elm-functional-front-end-development-and-why-you-should-care" title="en"/>
+    <updated>2016-01-15T00:00:00.000Z</updated>
+    <summary>Elm ist eine funktionale Programmiersprache, die zu JavaScript kompiliert. Eine Besonderheit ist dabei die statische Typisierung, welche es in JavaScript nicht gibt und die Elm-seitig über den Compiler realisiert ist.</summary>
+    <content type="html">Elm ist eine funktionale Programmiersprache, die zu JavaScript kompiliert. Eine Besonderheit ist dabei die statische Typisierung, welche es in JavaScript nicht gibt und die Elm-seitig über den Compiler realisiert ist.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/gulp-mvb.html</id>
+    <title>gulp-mvb</title>
+    <link href="https://dennisreimann.de/articles/gulp-mvb.html"/>
+    <updated>2016-01-12T00:00:00.000Z</updated>
+    <summary>For five years I have run this site and the accompanying blog with Octopress – a blogging tool written in Ruby. It is made to generate static sites - based on the fairly popular Jekyll, which also powers GitHub Pages. And even though it has some pretty nice concepts, I never used much of its features – I just needed it to generate some static pages and the blog. Migrating from Octopress 1 to version 2 seemed like a time consuming task, which I dreaded for a long time – meanwhile my focus shifted from Ruby to JavaScript …</summary>
+    <content type="html">For five years I have run this site and the accompanying blog with Octopress – a blogging tool written in Ruby. It is made to generate static sites - based on the fairly popular Jekyll, which also powers GitHub Pages. And even though it has some pretty nice concepts, I never used much of its features – I just needed it to generate some static pages and the blog. Migrating from Octopress 1 to version 2 seemed like a time consuming task, which I dreaded for a long time – meanwhile my focus shifted from Ruby to JavaScript …
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/hello-again-world.html</id>
+    <title>Hello again, World</title>
+    <link href="https://dennisreimann.de/articles/hello-again-world.html"/>
+    <updated>2015-12-22T00:00:00.000Z</updated>
+    <summary>Die vergangenen zwei Jahre waren recht arbeitsintensiv, wodurch ich leider das Bloggen hier quasi aufgegeben habe. Nichtsdestotrotz gibt es über diese zwei Jahre und auch die nahe Zukunft viel Spannendes zu erzählen, so dass dies hier der Versuch eines Wiedereinstiegs seien soll.</summary>
+    <content type="html">Die vergangenen zwei Jahre waren recht arbeitsintensiv, wodurch ich leider das Bloggen hier quasi aufgegeben habe. Nichtsdestotrotz gibt es über diese zwei Jahre und auch die nahe Zukunft viel Spannendes zu erzählen, so dass dies hier der Versuch eines Wiedereinstiegs seien soll.
+    </content>
+  </entry>
+</feed>

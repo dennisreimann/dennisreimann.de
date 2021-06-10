@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en" xml:base="https://dennisreimann.de">
+  <id>https://dennisreimann.de/articles/elm.xml</id>
+  <title>Elm: Functional Frontend Development</title>
+  <subtitle>Dennis Reimann: Freelance Software Developer</subtitle>
+  <updated>2019-02-26T00:00:00.000Z</updated>
+  <link href="https://dennisreimann.de/articles/elm.html"></link>
+  <link rel="self" href="https://dennisreimann.de/articles/elm.xml"></link>
+  <author>
+    <name>Dennis Reimann</name>
+    <email>mail@dennisreimann.de</email>
+  </author>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-architecture-overview.html</id>
+    <title>The Elm Architecture</title>
+    <link href="https://dennisreimann.de/articles/elm-architecture-overview.html"/>
+    <updated>2016-12-20T00:00:00.000Z</updated>
+    <summary>The beauty of The Elm Architecture lies in its simplicity:
+It structures applications into four parts and it defines how these interact with each other.
+In Elm there is only this one determined way to handle interactions and manage state – 
+and it provides a good foundation for modularity, code reuse and testing by default.</summary>
+    <content type="html">The beauty of The Elm Architecture lies in its simplicity:
+It structures applications into four parts and it defines how these interact with each other.
+In Elm there is only this one determined way to handle interactions and manage state – 
+and it provides a good foundation for modularity, code reuse and testing by default.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-atom-editor.html</id>
+    <title>Elm Atom Plugins</title>
+    <link href="https://dennisreimann.de/articles/elm-atom-editor.html"/>
+    <updated>2016-11-17T00:00:00.000Z</updated>
+    <summary>Some very good and useful plugins that will enhance your Elm editing in Atom.</summary>
+    <content type="html">Some very good and useful plugins that will enhance your Elm editing in Atom.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-tools-resources.html</id>
+    <title>Elm Tools and Resources</title>
+    <link href="https://dennisreimann.de/articles/elm-tools-resources.html"/>
+    <updated>2016-11-14T00:00:00.000Z</updated>
+    <summary>A list of tools and resources I found valuable when working with Elm. It contains useful tools that will help in your day to day work and links to learn Elm as well as to deepen your knowledge.</summary>
+    <content type="html">A list of tools and resources I found valuable when working with Elm. It contains useful tools that will help in your day to day work and links to learn Elm as well as to deepen your knowledge.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-type-annotations.html</id>
+    <title>Elm Type Annotations</title>
+    <link href="https://dennisreimann.de/articles/elm-type-annotations.html"/>
+    <updated>2016-11-07T00:00:00.000Z</updated>
+    <summary>As Elm is a statically typed language, everything has a type. Type annotations are an optional feature and the compiler can infer the types of your functions and value. Even though you do not have to write the type annotations yourself you probably should: They document your code and make it more explicit.</summary>
+    <content type="html">As Elm is a statically typed language, everything has a type. Type annotations are an optional feature and the compiler can infer the types of your functions and value. Even though you do not have to write the type annotations yourself you probably should: They document your code and make it more explicit.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-maybe.html</id>
+    <title>Elm Maybe</title>
+    <link href="https://dennisreimann.de/articles/elm-maybe.html"/>
+    <updated>2016-12-06T00:00:00.000Z</updated>
+    <summary>Opposed to JavaScript and many other programming languages, Elm does not have the concept of undefined or null values. Of course there are cases in which variables contain nothing or functions cannot return a proper value – but instead of leaving it up to you whether or not to handle these cases, Elm makes them explicit with a type called Maybe and enforces the handling thereof.</summary>
+    <content type="html">Opposed to JavaScript and many other programming languages, Elm does not have the concept of undefined or null values. Of course there are cases in which variables contain nothing or functions cannot return a proper value – but instead of leaving it up to you whether or not to handle these cases, Elm makes them explicit with a type called Maybe and enforces the handling thereof.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-data-structures-union-type.html</id>
+    <title>Elm Data Structures (3)</title>
+    <link href="https://dennisreimann.de/articles/elm-data-structures-union-type.html"/>
+    <link rel="alternate" type="text/html" href="https://dennisreimann.de/articles/elm-datenstrukturen-union-type.html" title="de"/>
+    <updated>2016-12-06T00:00:00.000Z</updated>
+    <summary>By defining a union type one always creates a new type that did not exist before. A union type can be an amalgamation of different types – but it does not have to be.</summary>
+    <content type="html">By defining a union type one always creates a new type that did not exist before. A union type can be an amalgamation of different types – but it does not have to be.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-data-structures-record-tuple.html</id>
+    <title>Elm Data Structures (2)</title>
+    <link href="https://dennisreimann.de/articles/elm-data-structures-record-tuple.html"/>
+    <link rel="alternate" type="text/html" href="https://dennisreimann.de/articles/elm-datenstrukturen-record-tuple.html" title="de"/>
+    <updated>2016-12-06T00:00:00.000Z</updated>
+    <summary>Records and tuples can contain an arbitrary amount of elements – as opposed to lists, arrays, sets and dictionaries these elements do not have to be of the same data type.</summary>
+    <content type="html">Records and tuples can contain an arbitrary amount of elements – as opposed to lists, arrays, sets and dictionaries these elements do not have to be of the same data type.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-data-structures-list-array-set-dict.html</id>
+    <title>Elm Data Structures (1)</title>
+    <link href="https://dennisreimann.de/articles/elm-data-structures-list-array-set-dict.html"/>
+    <link rel="alternate" type="text/html" href="https://dennisreimann.de/articles/elm-datenstrukturen-list-array-set-dict.html" title="de"/>
+    <updated>2016-01-26T00:00:00.000Z</updated>
+    <summary>In Elm there are different kinds of data structures that can contain elements. This article spotlights the iterable structures lists, arrays, sets and dictionaries.</summary>
+    <content type="html">In Elm there are different kinds of data structures that can contain elements. This article spotlights the iterable structures lists, arrays, sets and dictionaries.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-functions.html</id>
+    <title>Elm Functions</title>
+    <link href="https://dennisreimann.de/articles/elm-functions.html"/>
+    <link rel="alternate" type="text/html" href="https://dennisreimann.de/articles/elm-funktionen.html" title="de"/>
+    <updated>2016-01-21T00:00:00.000Z</updated>
+    <summary>This article spotlights the central construct of the Elm programming language: Functions. What does the definition of a function look like, how can functions be chained via piping and what the heck is currying?</summary>
+    <content type="html">This article spotlights the central construct of the Elm programming language: Functions. What does the definition of a function look like, how can functions be chained via piping and what the heck is currying?
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-modules-import.html</id>
+    <title>Elm Modules and Imports</title>
+    <link href="https://dennisreimann.de/articles/elm-modules-import.html"/>
+    <link rel="alternate" type="text/html" href="https://dennisreimann.de/articles/elm-module-imports.html" title="de"/>
+    <updated>2016-01-19T00:00:00.000Z</updated>
+    <summary>Importing a module exposes its functionality in the context of the program that is loading the module. In Elm there are different ways to import modules and we will have a look at these in this article.</summary>
+    <content type="html">Importing a module exposes its functionality in the context of the program that is loading the module. In Elm there are different ways to import modules and we will have a look at these in this article.
+    </content>
+  </entry>
+  <entry>
+    <id>https://dennisreimann.de/articles/elm-setup-first-project.html</id>
+    <title>Elm Setup</title>
+    <link href="https://dennisreimann.de/articles/elm-setup-first-project.html"/>
+    <link rel="alternate" type="text/html" href="https://dennisreimann.de/articles/elm-setup.html" title="de"/>
+    <updated>2016-01-17T00:00:00.000Z</updated>
+    <summary>How to install Elm and which tools do you need to build your first project? Besides clarifying these questions we will also look at a toolchain that goes beyond the simple Hello World.</summary>
+    <content type="html">How to install Elm and which tools do you need to build your first project? Besides clarifying these questions we will also look at a toolchain that goes beyond the simple Hello World.
+    </content>
+  </entry>
+</feed>

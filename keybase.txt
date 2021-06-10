@@ -1,0 +1,56 @@
+==================================================================
+https://keybase.io/dennisreimann
+--------------------------------------------------------------------
+
+I hereby claim:
+
+  * I am an admin of https://dennisreimann.de
+  * I am dennisreimann (https://keybase.io/dennisreimann) on keybase.
+  * I have a public key ASCmKNMX0hz4mRx82Iu9hRSEzwWMDP_uwVNmU_fiHsRqzgo
+
+To do so, I am signing this object:
+
+{
+  "body": {
+    "key": {
+      "eldest_kid": "0120c10522af5f4e50b9fabbd84331e6c9170c834f2684f4a190383d336d840b945f0a",
+      "host": "keybase.io",
+      "kid": "0120a628d317d21cf8991c7cd88bbd851484cf058c0cffeec1536653f7e21ec46ace0a",
+      "uid": "34ebc0aad99cfeb43bb9cd6af4dee519",
+      "username": "dennisreimann"
+    },
+    "merkle_root": {
+      "ctime": 1548600320,
+      "hash": "2088f59fdfe7d35253df895756504a83405bc150b728e73743ec04fa183711e89b5af09407e7e5433d6804c3dc9645b6d6940ccab96d7d76b8d95545255d30ae",
+      "hash_meta": "5b6770c619ae40f80102c6ca25b6c9e6b9125803126398a26aaa44693a963509",
+      "seqno": 4630102
+    },
+    "service": {
+      "entropy": "C70FbAqZezKX3/sPHFZfMNzg",
+      "hostname": "dennisreimann.de",
+      "protocol": "https:"
+    },
+    "type": "web_service_binding",
+    "version": 2
+  },
+  "client": {
+    "name": "keybase.io go client",
+    "version": "2.12.6"
+  },
+  "ctime": 1548600341,
+  "expire_in": 504576000,
+  "prev": "43762584146facde87f0cf9d4e03a76fa611b51b43500106603d6be1309402af",
+  "seqno": 22,
+  "tag": "signature"
+}
+
+which yields the signature:
+
+hKRib2R5hqhkZXRhY2hlZMOpaGFzaF90eXBlCqNrZXnEIwEgpijTF9Ic+JkcfNiLvYUUhM8FjAz/7sFTZlP34h7Eas4Kp3BheWxvYWTESpcCFsQgQ3YlhBRvrN6H8M+dTgOnb6YRtRtDUAEGYD1r4TCUAq/EIE4ytu7Gtz5pXOUim4/+SQmypFnydErO8YsPBd2QxPHeAgHCo3NpZ8RA1mIBIWTOdP7Ra452Kp510yRk+6qdw3l8FBsDAOCwATrI/PQnYxfjmtymEJ/N3w/PzAObn3bJF+wonpQyFUkqAKhzaWdfdHlwZSCkaGFzaIKkdHlwZQildmFsdWXEIGjwiTahgNL7s+peL8Vhqw3VxFTIkr80EtbV2MtpI9heo3RhZ80CAqd2ZXJzaW9uAQ==
+
+And finally, I am proving ownership of this host by posting or
+appending to this document.
+
+View my publicly-auditable identity here: https://keybase.io/dennisreimann
+
+==================================================================
